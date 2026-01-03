@@ -31,7 +31,7 @@ unsigned long lastTick = 0;
 
 //Immunity is the min amount of milliseconds which have to pass between two hits
 const unsigned long immunityMillis = 10L * 60L * 1000L; //10 minute immunity
-unsigned long lastHit = 0;
+unsigned long immunityEndMillis = 0;
 const int hitPoints = 50;
 
 bool locked = false;
@@ -45,9 +45,14 @@ bool isMatchingUid(byte expected[], byte actual[]) {
 }
 
 
-void resetScore() {
+void reset() {
   score = resetScoreValue;
   fuse = resetFuseValue;
+  immunityEndMillis = millis();
+  locked = false;
+  resetJokerUids();
+
+
   showScore();
   showInSecondRowWithPadding("Reset OK");
   delay(800);
@@ -73,14 +78,12 @@ void redeemJoker(byte joker[]) {
 
 
 void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP); // Taster nach GND
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   lcdSetup();
 
   SPI.begin();
   mfrc522.PCD_Init();
-
-  resetScore();
 }
 
 void loop() {
@@ -91,7 +94,7 @@ void loop() {
     if (mfrc522.uid.size != uidLen) return ;
 
     if (isResetTag(mfrc522.uid.uidByte)) {
-      resetScore();
+      reset();
     } else if (isLockTag(mfrc522.uid.uidByte)) {
       toggleLock();
     } else if (isJokerTag(mfrc522.uid.uidByte)) {
@@ -110,7 +113,6 @@ void loop() {
   }
 
 
-  // Taster gedrückt? (wegen Pullup ist gedrückt = LOW)
   bool pressed = (digitalRead(BUTTON_PIN) == LOW);
 
   if(score <= 0) {
@@ -119,22 +121,22 @@ void loop() {
 
   unsigned long now = millis();
 
-  if(lastHit != 0 && ((now - lastHit) <= immunityMillis)) {
-    showImmunity(immunityMillis - (now - lastHit));
+  if(now < immunityEndMillis) {
+    showImmunity(immunityEndMillis - now);
     return;
   }
 
   if (pressed) {
     showFuse();
     
-    // alle 200ms einen Punkt abziehen
+    // alle sekunde einen Punkt abziehen
     if (now - lastTick >= interval) {
 
       fuse--;
 
       if(fuse == 0) {
-        lastHit = millis();
-        score = score - hitPoints;
+        immunityEndMillis = now + immunityMillis;
+        score -= hitPoints;
         fuse = resetFuseValue;
         showScore();
       }
