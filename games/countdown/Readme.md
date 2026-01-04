@@ -1,4 +1,15 @@
-﻿
+﻿### Boards
+* Arduino ESP32 Boards 
+* Arduino AVR Boards
+
+
+### Libraries
+
+* LiquidCrystal_I2C https://github.com/markub3327/LiquidCrystal_I2C
+* MFRC522 https://github.com/miguelbalboa/rfid
+
+### NFC Tags
+
 
 bool isResetTag(byte actualUid[]) {
 const byte resetUid[4] = { 0x67, 0xAB, 0xCD, 0xEF }; 
